@@ -1,0 +1,54 @@
+name: Bug Report
+description: Create a report to help us improve soroban-fleet-registry
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue! Please do NOT post sensitive data such as API secrets, database passwords, or private keys.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction Steps
+      description: Steps or commands to reproduce the behavior.
+      placeholder: |
+        1. Run sfr fleet verify --owner ... --tag ...
+        2. Inspect output
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually occurred?
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment & Network
+      description: Operating System, Go version, Stellar network (e.g. Testnet Protocol 29), etc.
+      placeholder: "Ubuntu 22.04, Go 1.27.1, Testnet"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs
+      description: Attach relevant non-sensitive logs or output.
+      render: shell

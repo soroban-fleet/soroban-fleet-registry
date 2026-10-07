@@ -1,0 +1,26 @@
+name: Documentation Request
+description: Propose an improvement or clarification to the documentation
+title: "docs: "
+labels: ["documentation"]
+body:
+  - type: textarea
+    id: missing
+    attributes:
+      label: Documentation Gap
+      description: What information is unclear, outdated, or missing?
+    validations:
+      required: true
+  - type: textarea
+    id: location
+    attributes:
+      label: Location
+      description: Which file or section needs improvement (e.g. docs/deployment.md, README.md, API docs)?
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Clarification
+      description: What should the documentation say instead?
+    validations:
+      required: true

@@ -1,0 +1,35 @@
+name: Feature Request
+description: Suggest an enhancement or new capability for soroban-fleet-registry
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please note: `soroban-fleet-registry` is strictly a read-only observer and deterministic indexer. Proposals to add wallet connections, transaction signing, or on-chain mutations are out of scope.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What operational gap or problem does this proposal address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: Detailed description of the feature or behavior change.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Affected Components
+      description: Which components are impacted (e.g. Ingest, Resolver, Verifier, API, CLI, Web UI)?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative designs or workarounds considered.
