@@ -48,7 +48,12 @@ func (s *PostgresCheckpointStore) SetCheckpointTx(ctx context.Context, tx *sql.T
 			ledger = EXCLUDED.ledger,
 			updated_at = EXCLUDED.updated_at
 	`
-	_, err := tx.ExecContext(ctx, query, stream, ledger, now)
+	var err error
+	if tx != nil {
+		_, err = tx.ExecContext(ctx, query, stream, ledger, now)
+	} else {
+		_, err = s.db.ExecContext(ctx, query, stream, ledger, now)
+	}
 	if err != nil {
 		return fmt.Errorf("set checkpoint tx for stream %q to %d: %w", stream, ledger, err)
 	}
