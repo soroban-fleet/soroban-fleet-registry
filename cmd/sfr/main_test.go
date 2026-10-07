@@ -46,7 +46,11 @@ func TestCLI_ExitCodesAndCommands(t *testing.T) {
 	_, _ = db.Exec("TRUNCATE TABLE fleet_verifications, fleet_members, fleets CASCADE")
 
 	// Set environment for CLI
-	t.Setenv("SFR_DATABASE_URL", "postgres://postgres@localhost:5433/sfr_test?sslmode=disable")
+	cliDBURL := os.Getenv("SFR_DATABASE_URL")
+	if cliDBURL == "" {
+		cliDBURL = "postgres://postgres@localhost:5433/sfr_test?sslmode=disable"
+	}
+	t.Setenv("SFR_DATABASE_URL", cliDBURL)
 
 	// 1. Help -> ExitSuccess (0)
 	var out, errOut bytes.Buffer
