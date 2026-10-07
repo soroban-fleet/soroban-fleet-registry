@@ -2,7 +2,10 @@ module github.com/soroban-fleet/soroban-fleet-registry
 
 go 1.26.7
 
-require github.com/stellar/go-stellar-sdk v0.7.2
+require (
+	github.com/lib/pq v1.10.9
+	github.com/stellar/go-stellar-sdk v0.7.2
+)
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
