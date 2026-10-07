@@ -10,6 +10,22 @@ jobs:
   test:
     name: Build, Vet, and Test
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sfr
+          POSTGRES_PASSWORD: sfrpassword
+          POSTGRES_DB: sfr_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,4 +48,6 @@ jobs:
         run: go vet ./...
 
       - name: Test
+        env:
+          SFR_DATABASE_URL: postgres://sfr:sfrpassword@localhost:5432/sfr_test?sslmode=disable
         run: go test -v -race ./...
