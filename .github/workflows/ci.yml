@@ -51,3 +51,35 @@ jobs:
         env:
           SFR_DATABASE_URL: postgres://sfr:sfrpassword@localhost:5432/sfr_test?sslmode=disable
         run: go test -v -race -p 1 ./...
+
+  frontend:
+    name: Frontend Lint, Test, and Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run Tests
+        run: npm run test
+
+      - name: Build Application
+        run: npm run build
+
