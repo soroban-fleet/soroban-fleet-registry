@@ -1,0 +1,16 @@
+{
+  "owner_address": "CADQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAO6C",
+  "tag": "vault-invalid-hash",
+  "expected_wasm": "1234",
+  "members": [
+    {
+      "contract_id": "CAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABOVW",
+      "resolved_wasm": "1234",
+      "active": true
+    }
+  ],
+  "ledger": 1000,
+  "metadata": {
+    "scenario": "broken_reference_invalid_hash_length"
+  }
+}

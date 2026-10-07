@@ -1,0 +1,8 @@
+{
+  "owner_address": "CAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABDQF",
+  "tag": "vault-v1",
+  "old_wasm": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "new_wasm": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "ledger": 1050,
+  "tx_hash": "4a72d3f8e0b1c2a3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b"
+}

@@ -1,0 +1,16 @@
+{
+  "owner_address": "CACQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABN3Q",
+  "tag": "vault-broken",
+  "expected_wasm": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "members": [
+    {
+      "contract_id": "CADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA7M3",
+      "resolved_wasm": "",
+      "active": true
+    }
+  ],
+  "ledger": 1000,
+  "metadata": {
+    "scenario": "broken_reference_missing_owner_entry"
+  }
+}
