@@ -1,0 +1,11 @@
+.git
+.github
+web/node_modules
+web/.next
+web/coverage
+bin
+tmp
+*.env*
+!*.env.example
+pgdata
+.DS_Store
