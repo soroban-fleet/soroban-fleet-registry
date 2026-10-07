@@ -13,6 +13,7 @@ type Repository interface {
 	BeginTx(ctx context.Context) (*sql.Tx, error)
 
 	GetFleet(ctx context.Context, id FleetID) (*Fleet, error)
+	GetFleetTx(ctx context.Context, tx *sql.Tx, id FleetID) (*Fleet, error)
 	ListFleets(ctx context.Context, limit, offset int) ([]Fleet, int64, error)
 	UpsertFleet(ctx context.Context, fleet *Fleet) error
 	UpsertFleetTx(ctx context.Context, tx *sql.Tx, fleet *Fleet) error
@@ -70,6 +71,44 @@ func (r *PostgresRepository) GetFleet(ctx context.Context, id FleetID) (*Fleet, 
 			return nil, ErrFleetNotFound
 		}
 		return nil, fmt.Errorf("get fleet %v: %w", id, err)
+	}
+
+	f.FirstSeenLedger = uint32(firstSeen)
+	f.LastSeenLedger = uint32(lastSeen)
+	f.LastIndexedLedger = uint32(lastIndexed)
+
+	return &f, nil
+}
+
+// GetFleetTx fetches a fleet within an existing transaction.
+func (r *PostgresRepository) GetFleetTx(ctx context.Context, tx *sql.Tx, id FleetID) (*Fleet, error) {
+	query := `
+		SELECT owner_address, tag, current_wasm_hash, member_count,
+		       first_seen_ledger, last_seen_ledger, last_indexed_ledger,
+		       created_at, updated_at
+		FROM fleets
+		WHERE owner_address = $1 AND tag = $2
+	`
+	row := tx.QueryRowContext(ctx, query, id.Owner, id.Tag)
+
+	var f Fleet
+	var firstSeen, lastSeen, lastIndexed int64
+	err := row.Scan(
+		&f.ID.Owner,
+		&f.ID.Tag,
+		&f.CurrentWASMHash,
+		&f.MemberCount,
+		&firstSeen,
+		&lastSeen,
+		&lastIndexed,
+		&f.CreatedAt,
+		&f.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrFleetNotFound
+		}
+		return nil, fmt.Errorf("get fleet tx %v: %w", id, err)
 	}
 
 	f.FirstSeenLedger = uint32(firstSeen)
@@ -159,7 +198,11 @@ func (r *PostgresRepository) UpsertFleetTx(ctx context.Context, tx *sql.Tx, flee
 			created_at, updated_at
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		ON CONFLICT (owner_address, tag) DO UPDATE SET
-			current_wasm_hash = COALESCE(EXCLUDED.current_wasm_hash, fleets.current_wasm_hash),
+			current_wasm_hash = CASE 
+				WHEN EXCLUDED.current_wasm_hash IS NOT NULL AND length(EXCLUDED.current_wasm_hash) > 0 
+				THEN EXCLUDED.current_wasm_hash 
+				ELSE fleets.current_wasm_hash 
+			END,
 			member_count = EXCLUDED.member_count,
 			first_seen_ledger = LEAST(fleets.first_seen_ledger, EXCLUDED.first_seen_ledger),
 			last_seen_ledger = GREATEST(fleets.last_seen_ledger, EXCLUDED.last_seen_ledger),
