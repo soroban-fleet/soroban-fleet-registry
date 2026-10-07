@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sfr-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sfr
+      POSTGRES_PASSWORD: sfrpassword
+      POSTGRES_DB: sfr
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sfr -d sfr"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  sfr:
+    build: .
+    container_name: sfr-service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SFR_NETWORK: "testnet"
+      SFR_RPC_URL: "https://soroban-testnet.stellar.org"
+      SFR_DATABASE_URL: "postgres://sfr:sfrpassword@postgres:5432/sfr?sslmode=disable"
+      SFR_LOG_LEVEL: "info"
+      SFR_HTTP_ADDR: ":8080"
+      SFR_INDEXER_START_LEDGER: "1000"
+      SFR_INDEXER_BATCH_SIZE: "50"
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
