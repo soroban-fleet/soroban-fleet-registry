@@ -1,0 +1,506 @@
+openapi: 3.1.0
+info:
+  title: Soroban Fleet Registry API
+  version: 1.0.0
+  description: >
+    Operational indexing, discovery, resolution, and verification API for
+    externally managed Soroban contract executables (CAP-85).
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /v1/fleets:
+    get:
+      summary: List all fleets
+      description: Returns a paginated list of all indexed CAP-85 contract fleets.
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of fleets to return (default 20, max 100)
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          description: Number of fleets to skip (default 0)
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of fleets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Fleet'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /v1/fleets/{owner}/{tag}:
+    get:
+      summary: Get fleet by owner address and tag
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          description: StrKey address of the executable owner contract
+          schema:
+            type: string
+            example: CA3D5KRYMCMCZVACQY3CGINPVPUM2OAL6YHT3ZVM5C2MUMAA252AAAAB
+        - name: tag
+          in: path
+          required: true
+          description: Executable tag string (case-sensitive, exact)
+          schema:
+            type: string
+            example: vault-v1
+      responses:
+        '200':
+          description: Fleet details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Fleet'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /v1/fleets/{owner}/{tag}/members:
+    get:
+      summary: List fleet members
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tag
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: active_only
+          in: query
+          description: Filter to only currently active fleet members (default true)
+          schema:
+            type: boolean
+            default: true
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Fleet members list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FleetMember'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /v1/fleets/{owner}/{tag}/history:
+    get:
+      summary: Get verification history for a fleet
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tag
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Historical verification results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VerificationResult'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /v1/fleets/{owner}/{tag}/releases:
+    get:
+      summary: List release history for a fleet
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tag
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of observed releases
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FleetRelease'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /v1/fleets/{owner}/{tag}/verify:
+    get:
+      summary: Trigger and fetch fleet verification
+      description: Verifies current on-chain executables of all active members against expected WASM hash.
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tag
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: expected_wasm
+          in: query
+          description: Hex-encoded 32-byte expected WASM hash (defaults to fleet's current WASM hash)
+          schema:
+            type: string
+            example: 91aa618b74668f4d960fca5dfc37f0775d1797e8ff4d34f0bf26efbd99238e83
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/VerificationResult'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /v1/contracts/{contract_id}:
+    get:
+      summary: Inspect contract
+      description: Returns indexed fleet membership details and live resolved executable state.
+      parameters:
+        - name: contract_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: CA3D5KRYMCMCZVACQY3CGINPVPUM2OAL6YHT3ZVM5C2MUMAA252AAAAB
+      responses:
+        '200':
+          description: Contract inspection result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ContractInspection'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+components:
+  responses:
+    ErrorResponse:
+      description: Structured error response
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - error
+            properties:
+              error:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    example: FLEET_NOT_FOUND
+                  message:
+                    type: string
+                    example: Fleet was not found
+
+  schemas:
+    PaginationMeta:
+      type: object
+      required:
+        - total
+        - limit
+        - offset
+      properties:
+        total:
+          type: integer
+          example: 100
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+
+    FleetID:
+      type: object
+      required:
+        - Owner
+        - Tag
+      properties:
+        Owner:
+          type: string
+          example: CA3D5KRYMCMCZVACQY3CGINPVPUM2OAL6YHT3ZVM5C2MUMAA252AAAAB
+        Tag:
+          type: string
+          example: vault-v1
+
+    Fleet:
+      type: object
+      required:
+        - id
+        - member_count
+        - first_seen_ledger
+        - last_seen_ledger
+        - last_indexed_ledger
+      properties:
+        id:
+          $ref: '#/components/schemas/FleetID'
+        current_wasm_hash:
+          type: string
+          format: byte
+          description: Base64-encoded WASM hash
+        member_count:
+          type: integer
+          example: 42
+        first_seen_ledger:
+          type: integer
+          example: 100000
+        last_seen_ledger:
+          type: integer
+          example: 105432
+        last_indexed_ledger:
+          type: integer
+          example: 105432
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    FleetMember:
+      type: object
+      required:
+        - contract_id
+        - fleet_id
+        - wasm_hash
+        - first_seen_ledger
+        - last_seen_ledger
+        - active
+      properties:
+        contract_id:
+          type: string
+          example: CB222222222222222222222222222222222222222222222222222222
+        fleet_id:
+          $ref: '#/components/schemas/FleetID'
+        wasm_hash:
+          type: string
+          format: byte
+        first_seen_ledger:
+          type: integer
+        last_seen_ledger:
+          type: integer
+        last_verified_ledger:
+          type: integer
+          nullable: true
+        active:
+          type: boolean
+          example: true
+
+    FleetRelease:
+      type: object
+      required:
+        - id
+        - fleet_id
+        - new_wasm_hash
+        - ledger
+        - tx_hash
+        - observed_at
+      properties:
+        id:
+          type: integer
+          example: 1
+        fleet_id:
+          $ref: '#/components/schemas/FleetID'
+        old_wasm_hash:
+          type: string
+          format: byte
+          nullable: true
+        new_wasm_hash:
+          type: string
+          format: byte
+        ledger:
+          type: integer
+          example: 102000
+        tx_hash:
+          type: string
+          example: 3b940e53a2ef9f8...
+        observed_at:
+          type: string
+          format: date-time
+
+    VerificationStatus:
+      type: string
+      enum:
+        - HEALTHY
+        - DRIFT
+        - BROKEN_REFERENCE
+        - INCOMPLETE
+        - UNKNOWN
+      example: HEALTHY
+
+    VerificationResult:
+      type: object
+      required:
+        - fleet_id
+        - expected_wasm_hash
+        - total_members
+        - matching_members
+        - mismatching_members
+        - missing_members
+        - indexed_through
+        - status
+        - verified_at
+      properties:
+        id:
+          type: integer
+          example: 10
+        fleet_id:
+          $ref: '#/components/schemas/FleetID'
+        expected_wasm_hash:
+          type: string
+          format: byte
+        total_members:
+          type: integer
+          example: 15
+        matching_members:
+          type: integer
+          example: 15
+        mismatching_members:
+          type: integer
+          example: 0
+        missing_members:
+          type: integer
+          example: 0
+        indexed_through:
+          type: integer
+          example: 105432
+        status:
+          $ref: '#/components/schemas/VerificationStatus'
+        verified_at:
+          type: string
+          format: date-time
+
+    ContractInspection:
+      type: object
+      required:
+        - contract_id
+        - is_member
+        - resolved
+      properties:
+        contract_id:
+          type: string
+          example: CA3D5KRYMCMCZVACQY3CGINPVPUM2OAL6YHT3ZVM5C2MUMAA252AAAAB
+        is_member:
+          type: boolean
+          example: true
+        member:
+          $ref: '#/components/schemas/FleetMember'
+        resolved:
+          type: object
+          properties:
+            kind:
+              type: string
+              example: EXTERNAL_REF
+            fleet:
+              $ref: '#/components/schemas/FleetID'
+            wasm_hash:
+              type: string
+              format: byte
