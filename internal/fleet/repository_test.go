@@ -11,6 +11,7 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/soroban-fleet/soroban-fleet-registry/migrations"
+	"github.com/stellar/go-stellar-sdk/strkey"
 )
 
 func getTestDB(t *testing.T) *sql.DB {
@@ -31,14 +32,24 @@ func getTestDB(t *testing.T) *sql.DB {
 	return db
 }
 
+func makeContractID(seed byte) string {
+	var b [32]byte
+	b[0] = seed
+	res, _ := strkey.Encode(strkey.VersionByteContract, b[:])
+	return res
+}
+
 func TestFleetRepository_CRUD(t *testing.T) {
 	db := getTestDB(t)
 	defer db.Close()
+	_, _ = db.Exec("TRUNCATE TABLE fleet_members, fleets CASCADE")
+
 	repo := NewPostgresRepository(db)
 	ctx := context.Background()
 
+	ownerID := makeContractID(1)
 	fleetID := FleetID{
-		Owner: "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+		Owner: ownerID,
 		Tag:   "vault-v1",
 	}
 
@@ -79,7 +90,7 @@ func TestFleetRepository_CRUD(t *testing.T) {
 
 	// 4. Upsert Member
 	member1 := &FleetMember{
-		ContractID:      "CB111111111111111111111111111111111111111111111111111111",
+		ContractID:      makeContractID(2),
 		FleetID:         fleetID,
 		WASMHash:        wasmHash,
 		FirstSeenLedger: 100,
