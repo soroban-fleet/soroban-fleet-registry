@@ -18,6 +18,7 @@ type Config struct {
 	IndexerBatchSize   uint32
 	MetricsAddr        string
 	ReadOnly           bool
+	AllowedOrigins     []string
 }
 
 const (
@@ -72,6 +73,16 @@ func Load() (*Config, error) {
 			return nil, fmt.Errorf("invalid SFR_READ_ONLY %q: %w", readOnlyStr, err)
 		}
 		cfg.ReadOnly = val
+	}
+
+	if originsStr := os.Getenv("SFR_CORS_ALLOWED_ORIGINS"); originsStr != "" {
+		parts := strings.Split(originsStr, ",")
+		for _, p := range parts {
+			trimmed := strings.TrimSpace(p)
+			if trimmed != "" {
+				cfg.AllowedOrigins = append(cfg.AllowedOrigins, trimmed)
+			}
+		}
 	}
 
 	return cfg, nil

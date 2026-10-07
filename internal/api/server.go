@@ -14,12 +14,13 @@ import (
 
 // Server coordinates HTTP routing, middleware, and handlers.
 type Server struct {
-	addr         string
-	fleetService *fleet.Service
-	verifier     verification.Verifier
-	releases     history.Repository
-	logger       *slog.Logger
-	server       *http.Server
+	addr           string
+	fleetService   *fleet.Service
+	verifier       verification.Verifier
+	releases       history.Repository
+	logger         *slog.Logger
+	server         *http.Server
+	allowedOrigins []string
 }
 
 // NewServer initializes a new API server.
@@ -42,9 +43,18 @@ func NewServer(
 	}
 }
 
+// SetAllowedOrigins configures explicit CORS origins.
+func (s *Server) SetAllowedOrigins(origins []string) {
+	s.allowedOrigins = origins
+}
+
 // Handler configures and returns the HTTP request multiplexer.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
+
+	// Service health endpoint
+	mux.HandleFunc("GET /health", s.handleHealth)
+	mux.HandleFunc("GET /v1/health", s.handleHealth)
 
 	mux.HandleFunc("GET /v1/fleets", s.handleListFleets)
 	mux.HandleFunc("GET /v1/fleets/{owner}/{tag}", s.handleGetFleet)
@@ -54,8 +64,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/fleets/{owner}/{tag}/verify", s.handleVerifyFleet)
 	mux.HandleFunc("GET /v1/contracts/{contract_id}", s.handleInspectContract)
 
-	// Wrap with common middleware (logging, panic recovery, CORS)
-	return s.recoveryMiddleware(s.loggingMiddleware(mux))
+	// Wrap with common middleware (panic recovery, CORS, logging)
+	return s.recoveryMiddleware(s.corsMiddleware(s.loggingMiddleware(mux)))
 }
 
 // Start runs the HTTP server.
@@ -106,3 +116,38 @@ func (s *Server) recoveryMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func (s *Server) corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin != "" {
+			allowed := false
+			if len(s.allowedOrigins) == 0 {
+				// Default development allowance
+				allowed = true
+			} else {
+				for _, o := range s.allowedOrigins {
+					if o == "*" || o == origin {
+						allowed = true
+						break
+					}
+				}
+			}
+
+			if allowed {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Accept")
+				w.Header().Set("Access-Control-Max-Age", "86400")
+			}
+		}
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+

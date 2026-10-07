@@ -11,6 +11,51 @@ servers:
     description: Local development server
 
 paths:
+  /health:
+    get:
+      summary: Service health check
+      description: Returns liveness and service status for orchestrators and load balancers.
+      responses:
+        '200':
+          description: Service is healthy and accepting traffic
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: UP
+                  service:
+                    type: string
+                    example: soroban-fleet-registry
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: '2026-10-07T12:00:00Z'
+
+  /v1/health:
+    get:
+      summary: API health check (versioned alias)
+      description: Returns liveness and service status under the /v1 prefix.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: UP
+                  service:
+                    type: string
+                    example: soroban-fleet-registry
+                  timestamp:
+                    type: string
+                    format: date-time
+
   /v1/fleets:
     get:
       summary: List all fleets

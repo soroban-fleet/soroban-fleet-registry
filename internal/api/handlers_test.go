@@ -177,4 +177,52 @@ func TestAPI_Endpoints(t *testing.T) {
 	if errResp2.Error.Code != "INVALID_ARGUMENT" {
 		t.Errorf("expected INVALID_ARGUMENT, got %s", errResp2.Error.Code)
 	}
+
+	// Test 10: GET /health and GET /v1/health
+	req = httptest.NewRequest("GET", "/health", nil)
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 for /health, got %d", rec.Code)
+	}
+	var healthResp HealthResponse
+	_ = json.Unmarshal(rec.Body.Bytes(), &healthResp)
+	if healthResp.Status != "UP" || healthResp.Service != "soroban-fleet-registry" {
+		t.Errorf("unexpected health response: %+v", healthResp)
+	}
+
+	req = httptest.NewRequest("GET", "/v1/health", nil)
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 for /v1/health, got %d", rec.Code)
+	}
 }
+
+func TestCORS_Configuration(t *testing.T) {
+	server := NewServer(":8080", nil, nil, nil, nil)
+	server.SetAllowedOrigins([]string{"https://fleet.example.com", "http://localhost:3000"})
+	handler := server.Handler()
+
+	// Allowed origin
+	req := httptest.NewRequest("OPTIONS", "/health", nil)
+	req.Header.Set("Origin", "https://fleet.example.com")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNoContent {
+		t.Errorf("expected 204 for OPTIONS preflight, got %d", rec.Code)
+	}
+	if rec.Header().Get("Access-Control-Allow-Origin") != "https://fleet.example.com" {
+		t.Errorf("expected allowed origin header, got %s", rec.Header().Get("Access-Control-Allow-Origin"))
+	}
+
+	// Disallowed origin
+	req = httptest.NewRequest("OPTIONS", "/health", nil)
+	req.Header.Set("Origin", "https://malicious.com")
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Header().Get("Access-Control-Allow-Origin") != "" {
+		t.Errorf("expected no allow origin header for untrusted origin, got %s", rec.Header().Get("Access-Control-Allow-Origin"))
+	}
+}
+

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/soroban-fleet/soroban-fleet-registry/internal/cap85"
 	"github.com/soroban-fleet/soroban-fleet-registry/internal/fleet"
@@ -221,3 +222,18 @@ func (s *Server) handleInspectContract(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, SingleResponse{Data: inspection})
 }
+
+type HealthResponse struct {
+	Status    string `json:"status"`
+	Service   string `json:"service"`
+	Timestamp string `json:"timestamp"`
+}
+
+func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, HealthResponse{
+		Status:    "UP",
+		Service:   "soroban-fleet-registry",
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	})
+}
+

@@ -434,6 +434,9 @@ func runAPICommand(cfg *config.Config, stdout, stderr io.Writer) int {
 
 	logger := slog.New(slog.NewTextHandler(stdout, nil))
 	server := api.NewServer(cfg.HTTPAddr, fleetService, verifier, releaseRepo, logger)
+	if len(cfg.AllowedOrigins) > 0 {
+		server.SetAllowedOrigins(cfg.AllowedOrigins)
+	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
