@@ -130,6 +130,11 @@ func (e *Engine) VerifyFleet(ctx context.Context, fleetID FleetID, expectedHash 
 		}
 	}
 
+	// Any members that were not successfully resolved are considered missing
+	if total > 0 && (matching+mismatching) < total {
+		missing = total - (matching + mismatching)
+	}
+
 	// 5. Determine status according to Section 17 rules
 	var status VerificationStatus
 
