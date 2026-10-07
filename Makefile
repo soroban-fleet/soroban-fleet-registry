@@ -1,4 +1,4 @@
-.PHONY: all build test vet fmt fmt-check clean migrations-up
+.PHONY: all build test vet fmt fmt-check clean migrations-up web-install web-test web-lint web-build
 
 BIN_DIR := bin
 BINARY := $(BIN_DIR)/sfr
@@ -23,3 +23,15 @@ fmt-check:
 
 clean:
 	rm -rf $(BIN_DIR)
+
+web-install:
+	cd web && npm ci
+
+web-test:
+	cd web && npm test
+
+web-lint:
+	cd web && npm run lint
+
+web-build:
+	cd web && npm run build
