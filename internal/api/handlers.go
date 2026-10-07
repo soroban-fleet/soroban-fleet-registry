@@ -236,4 +236,3 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 	})
 }
-

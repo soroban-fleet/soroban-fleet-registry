@@ -225,4 +225,3 @@ func TestCORS_Configuration(t *testing.T) {
 		t.Errorf("expected no allow origin header for untrusted origin, got %s", rec.Header().Get("Access-Control-Allow-Origin"))
 	}
 }
-
