@@ -24,6 +24,8 @@ The project has achieved complete technical execution across V1.0.0 (indexer, CA
 ## Program Parameters Verification
 
 - **Program**: Stellar Community Fund (SCF) Build Award
+- **Current Round**: SCF #46
+- **Published Submission Deadline**: November 8, 2026
 - **Award Structure**: Milestone-based funding distributed in payments tied to verifiable tranches (typically 3–4 months execution span, tranches completed within 90 days).
 - **Award Ceiling**: Up to $150,000 in XLM (projects must budget based on actual future engineering, infrastructure, and operational costs rather than simply targeting the ceiling).
 - **Governance**: Reviewed by verified community delegates and Neural Quorum Governance (NQG).
@@ -42,16 +44,16 @@ The project has achieved complete technical execution across V1.0.0 (indexer, CA
 | **Monitoring Plan** | Operational metrics, alerting thresholds, runbooks. | [`submission/scf/security/monitoring-plan.md`](./security/monitoring-plan.md) | ✅ **VERIFIED** (Signals, triggers, severity) |
 | **Impact Framework** | Measurable outputs, adoption signals, long-term impact. | [`submission/scf/impact/metrics-framework.md`](./impact/metrics-framework.md) | ✅ **VERIFIED** (Baseline vs target model) |
 | **Future Roadmap** | Scoped, time-bound tranches requesting funding for future work only. | [`submission/scf/roadmap/tranches.md`](./roadmap/tranches.md) | ✅ **VERIFIED** (Tranches 1, 2, and 3) |
-| **Validated Need** | Independent protocol maintainers confirming operational need. | [`submission/scf/validation/validation-log.md`](./validation/validation-log.md) | ❌ **VALIDATION NEEDED** (Outreach pending) |
-| **Team Profiles** | Verified personal resumes, public portfolios, and time commitments. | [`submission/scf/team/team-profile.md`](./team/team-profile.md) | ⚠️ **INPUT REQUIRED FROM TEAM** |
-| **Cost Budget** | Detailed engineering rates and infrastructure pricing. | [`submission/scf/budget/tranche-budget.md`](./budget/tranche-budget.md) | ⚠️ **INPUT REQUIRED FROM TEAM** |
-| **Public Deployment** | Publicly accessible production instance with TLS and monitoring. | [`submission/scf/deployment/mainnet-readiness.md`](./deployment/mainnet-readiness.md) | ⚠️ **NOT YET DEPLOYED** (Infrastructure pending) |
+| **Validated Need** | Independent protocol maintainers confirming operational need. | [`submission/scf/validation/validation-log.md`](./validation/validation-log.md) | ❌ **BLOCKED** (0 external interviews completed) |
+| **Team Profiles** | Verified personal resumes, public portfolios, and time commitments. | [`submission/scf/team/team-profile.md`](./team/team-profile.md) | ❌ **BLOCKED** (Input required from team) |
+| **Cost Budget** | Detailed engineering rates and infrastructure pricing. | [`submission/scf/budget/tranche-budget.md`](./budget/tranche-budget.md) | ❌ **BLOCKED** (Contracting rates required from team) |
+| **Public Deployment** | Publicly accessible production instance with TLS and monitoring. | [`submission/scf/deployment/hosting-decision.md`](./deployment/hosting-decision.md) | ❌ **BLOCKED** (Cloud infrastructure not yet provisioned) |
 
 ---
 
-## Action Items & Remediation Focus
+## Action Items & Blocker Resolution Roadmap
 
-1. **Conduct Protocol Validation Outreach**: Execute [`validation/outreach-template.md`](./validation/outreach-template.md) to gather real operational feedback from Soroban protocol maintainers.
-2. **Collect Team Credentials**: Populate [`team/team-profile.md`](./team/team-profile.md) with confirmed maintainer details, time commitments, and public portfolios.
-3. **Formalize Budget Assumptions**: Populate [`budget/assumptions.md`](./budget/assumptions.md) with confirmed engineering hourly rates and hosting quotes.
-4. **Prepare Production Infrastructure**: Complete public deployment preconditions outlined in [`deployment/mainnet-readiness.md`](./deployment/mainnet-readiness.md).
+1. **BLOCKER 1 (Validated Need)**: Execute [`validation/outreach-template.md`](./validation/outreach-template.md) across Stellar Developer Discord (`#soroban-dev`) to secure 3+ external interviews from teams deploying factory contracts.
+2. **BLOCKER 2 (Team Profile)**: Maintainer team must supply confirmed legal/professional names, portfolios, and weekly hours in [`team/team-profile.md`](./team/team-profile.md).
+3. **BLOCKER 3 (Budget Inputs)**: Maintainer team must confirm exact hourly contractor rates and server quotes in [`budget/assumptions.md`](./budget/assumptions.md).
+4. **BLOCKER 4 (Production Hosting)**: Provision cloud container instances and dedicated Soroban RPC node prior to claiming a live public mainnet endpoint (or formally structure as Tranche 3 deliverable).
