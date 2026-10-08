@@ -9,6 +9,15 @@ CAP-85 fleet discovery, indexing, executable resolution, history, and verificati
 
 > **Project status**: Early infrastructure release (v1.0.0). Read-only observer and deterministic indexer.
 
+Documentation:
+https://soroban-fleet.github.io/soroban-fleet-registry/
+
+- [Quick Start](https://soroban-fleet.github.io/soroban-fleet-registry/docs/introduction/quick-start)
+- [Architecture](https://soroban-fleet.github.io/soroban-fleet-registry/docs/architecture/system-architecture)
+- [API](https://soroban-fleet.github.io/soroban-fleet-registry/docs/api/overview)
+- [Contributing](https://soroban-fleet.github.io/soroban-fleet-registry/docs/contributing/workflow)
+- [Security](https://soroban-fleet.github.io/soroban-fleet-registry/docs/contributing/security)
+
 ---
 
 ## 1. What is this?
