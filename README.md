@@ -22,7 +22,7 @@ https://soroban-fleet.github.io/soroban-fleet-registry/
 
 ## 1. What is this?
 
-`soroban-fleet-registry` (`sfr`) is an open-source indexing and verification service for Soroban smart contracts built on Stellar Protocol 28. It discovers, tracks, and verifies contracts that use CAP-85 externally managed contract executables.
+`soroban-fleet-registry` (`sfr`) is an open-source indexing and verification service for Soroban smart contracts. CAP-85 was introduced in Protocol 28 and is supported on the current Protocol 29 network. SFR discovers, tracks, and verifies contracts that use CAP-85 externally managed contract executables.
 
 ---
 

@@ -4,7 +4,7 @@ Concise definitions of the terms used on this site.
 
 | Term | Definition |
 |---|---|
-| **CAP-85** | Stellar Protocol 28 CAP, "Externally managed contract executables". Adds the `CONTRACT_EXECUTABLE_EXTERNAL_REF` executable variant so many contracts can share one updatable WASM reference. |
+| **CAP-85** | Stellar CAP introduced in Protocol 28 and supported on Protocol 29, "Externally managed contract executables". Adds the `CONTRACT_EXECUTABLE_EXTERNAL_REF` executable variant so many contracts can share one updatable WASM reference. |
 | **Soroban** | The smart contract platform on the Stellar network. |
 | **ExternalRef** | `CONTRACT_EXECUTABLE_EXTERNAL_REF` — a contract executable that names an owner contract and a tag instead of storing a WASM hash directly. |
 | **Executable reference** | The `(executable_owner, tag)` pair stored in a contract's executable; the data SFR decodes. |

@@ -1,6 +1,6 @@
 # CAP-85 Protocol Specification & Mechanics
 
-CAP-85 (Protocol 28, "Adapter") introduces externally managed contract executables to Soroban.
+CAP-85 was introduced in Protocol 28 and is supported on the current Protocol 29 network. It introduces externally managed contract executables to Soroban.
 
 ## The Problem Solved by CAP-85
 

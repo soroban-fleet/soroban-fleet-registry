@@ -1,7 +1,7 @@
 # Why CAP-85?
 
 [CAP-85 "Externally managed contract executables"](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0085.md)
-is a Final CAP introduced in Stellar Protocol 28. It adds a third executable variant to Soroban
+is a Final CAP introduced in Stellar Protocol 28 and supported on the current Protocol 29 network. It adds a third executable variant to Soroban
 contracts.
 
 Primary source: `stellar/stellar-protocol`, `core/cap-0085.md`.
