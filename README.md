@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/logo.png" alt="Soroban Fleet Registry Logo" width="160" height="160" />
+</p>
+
 # soroban-fleet-registry (`sfr`)
 
 [![CI](https://github.com/soroban-fleet/soroban-fleet-registry/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/soroban-fleet/soroban-fleet-registry/actions/workflows/ci.yml)
