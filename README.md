@@ -44,7 +44,7 @@ Soroban CAP-85 introduces the `CONTRACT_EXECUTABLE_EXTERNAL_REF` executable vari
 
 A **fleet** is identified by:
 
-$$\text{Fleet Identity} = (\text{owner\_address}, \text{tag})$$
+**Fleet Identity:** `(owner_address, tag)`
 
 - **Owner Address**: The StrKey address of the contract that manages the executable.
 - **Tag**: An exact, canonical string identifier (e.g. `vault-v1`).
