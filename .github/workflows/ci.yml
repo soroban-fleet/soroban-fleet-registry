@@ -93,3 +93,28 @@ jobs:
       - name: Build Application
         run: npm run build
 
+  docs:
+    name: Documentation Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: docs-site
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: docs-site/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Documentation Site
+        run: npm run build
+
