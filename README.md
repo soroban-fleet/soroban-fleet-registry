@@ -1,15 +1,19 @@
-<p align="center">
-  <img src="docs/assets/logo.png" alt="Soroban Fleet Registry Logo" width="160" height="160" />
-</p>
-
 # soroban-fleet-registry (`sfr`)
 
-[![CI](https://github.com/soroban-fleet/soroban-fleet-registry/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/soroban-fleet/soroban-fleet-registry/actions/workflows/ci.yml)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/soroban-fleet/soroban-fleet-registry)](go.mod)
-[![Release](https://img.shields.io/github/v/release/soroban-fleet/soroban-fleet-registry?color=blue)](https://github.com/soroban-fleet/soroban-fleet-registry/releases)
-[![Protocol](https://img.shields.io/badge/Stellar-Protocol%2028-blue.svg)](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0085.md)
+<p align="center">
+  <img src="docs/assets/logo.png" alt="Soroban Fleet Registry Banner" width="100%" />
+</p>
 
-CAP-85 fleet discovery, indexing, executable resolution, history, and verification for Soroban contracts.
+<p align="center">
+  <a href="https://github.com/soroban-fleet/soroban-fleet-registry/actions/workflows/ci.yml"><img src="https://github.com/soroban-fleet/soroban-fleet-registry/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
+  <a href="go.mod"><img src="https://img.shields.io/github/go-mod/go-version/soroban-fleet/soroban-fleet-registry" alt="Go Version" /></a>
+  <a href="https://github.com/soroban-fleet/soroban-fleet-registry/releases"><img src="https://img.shields.io/github/v/release/soroban-fleet/soroban-fleet-registry?color=blue" alt="Release" /></a>
+  <a href="https://github.com/stellar/stellar-protocol/blob/master/core/cap-0085.md"><img src="https://img.shields.io/badge/Stellar-Protocol%2028-blue.svg" alt="Protocol" /></a>
+</p>
+
+<p align="center">
+  CAP-85 fleet discovery, indexing, executable resolution, history, and verification for Soroban contracts.
+</p>
 
 > **Project status**: Early infrastructure release (v1.0.0). Read-only observer and deterministic indexer.
 
