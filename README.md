@@ -152,6 +152,12 @@ sfr fleet verify \
   --owner CA3D5KRYMCMCZVACQY3CGINPVPUM2OAL6YHT3ZVM5C2MUMAA252AAAAB \
   --tag vault-v1
 
+# Verify fleet with SARIF output for GitHub Code Scanning
+sfr fleet verify --owner CA3D... --tag vault-v1 --format sarif > results.sarif
+
+# Export all fleet members to CSV or JSON
+sfr fleet export --owner CA3D... --tag vault-v1 --format csv > members.csv
+
 # Inspect a contract's live resolution
 sfr contract inspect \
   --contract CB222222222222222222222222222222222222222222222222222222
@@ -160,7 +166,7 @@ sfr contract inspect \
 sfr fleet members --owner CA3D... --tag vault-v1
 ```
 
-Add `--json` to any command for machine-readable output.
+Global flags: `--json` for machine-readable JSON output, `--format [text|json|csv|sarif]` for format selection.
 
 ---
 
@@ -169,7 +175,9 @@ Add `--json` to any command for machine-readable output.
 The server exposes an OpenAPI 3.1 compliant REST API:
 
 - `GET /health`: Service liveness check
-- `GET /v1/fleets`: List indexed fleets (paginated)
+- `GET /v1/health`: API health check (alias)
+- `GET /v1/indexer/status`: Ingestion stream checkpoint, ledger lag, and sync status
+- `GET /v1/fleets`: List indexed fleets (paginated; supports `?status=...` and `?tag_prefix=...`)
 - `GET /v1/fleets/{owner}/{tag}`: Fleet details and current WASM hash
 - `GET /v1/fleets/{owner}/{tag}/members`: Fleet member contracts and drift flags
 - `GET /v1/fleets/{owner}/{tag}/history`: Historical verification records
@@ -177,7 +185,7 @@ The server exposes an OpenAPI 3.1 compliant REST API:
 - `GET /v1/fleets/{owner}/{tag}/verify`: Run on-demand verification
 - `GET /v1/contracts/{contract_id}`: Contract lookup and fleet membership
 
-See [`api/openapi.yaml`](api/openapi.yaml) for the full specification.
+See [`api/openapi.yaml`](api/openapi.yaml) for the full specification. See [`APPEAL.md`](APPEAL.md) for Drips Wave appeal evidence.
 
 ---
 

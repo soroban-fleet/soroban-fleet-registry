@@ -5,8 +5,9 @@
 | **Repository** | https://github.com/soroban-fleet/soroban-fleet-registry | Public, clean main branch, Apache-2.0 license |
 | **Release** | https://github.com/soroban-fleet/soroban-fleet-registry/releases/tag/v1.0.0 | Release v1.0.0 with annotated git tag |
 | **Documentation** | https://soroban-fleet.github.io/soroban-fleet-registry/ | Live Docusaurus 3 site, responsive, local search |
+| **Appeal Dossier** | https://github.com/soroban-fleet/soroban-fleet-registry/blob/main/APPEAL.md | Substantive improvement evidence for Drips Wave |
 | **API Specification** | https://github.com/soroban-fleet/soroban-fleet-registry/blob/main/api/openapi.yaml | OpenAPI 3.1 specification |
-| **Issue Backlog** | https://github.com/soroban-fleet/soroban-fleet-registry/issues | 16 scoped engineering issues |
+| **Issue Backlog** | https://github.com/soroban-fleet/soroban-fleet-registry/issues | 16 scoped engineering issues (Issues #1, #3, #6, #9 resolved) |
 | **Security Policy** | https://github.com/soroban-fleet/soroban-fleet-registry/blob/main/SECURITY.md | Vulnerability reporting procedure |
 | **Contributing** | https://github.com/soroban-fleet/soroban-fleet-registry/blob/main/CONTRIBUTING.md | Developer workflow and guidelines |
 | **Continuous Integration** | https://github.com/soroban-fleet/soroban-fleet-registry/actions/workflows/ci.yml | Go test + race detector, Next.js tests, docs build |
