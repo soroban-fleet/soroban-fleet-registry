@@ -35,6 +35,12 @@ describe('API Client', () => {
       'http://localhost:8080/v1/fleets?limit=10&offset=20',
       expect.objectContaining({ cache: 'no-store' })
     );
+
+    await listFleets({ status: 'HEALTHY', tag_prefix: 'vault' });
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://localhost:8080/v1/fleets?status=HEALTHY&tag_prefix=vault',
+      expect.objectContaining({ cache: 'no-store' })
+    );
   });
 
   it('encodes path parameters safely without altering tags', async () => {

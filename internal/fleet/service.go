@@ -40,6 +40,11 @@ func (s *Service) GetFleet(ctx context.Context, id FleetID) (*Fleet, error) {
 
 // ListFleets returns a paginated list of fleets.
 func (s *Service) ListFleets(ctx context.Context, limit, offset int) ([]Fleet, int64, error) {
+	return s.ListFleetsFiltered(ctx, FleetFilter{}, limit, offset)
+}
+
+// ListFleetsFiltered returns a paginated list of fleets matching the filter.
+func (s *Service) ListFleetsFiltered(ctx context.Context, filter FleetFilter, limit, offset int) ([]Fleet, int64, error) {
 	if limit <= 0 {
 		limit = 20
 	}
@@ -49,7 +54,7 @@ func (s *Service) ListFleets(ctx context.Context, limit, offset int) ([]Fleet, i
 	if offset < 0 {
 		offset = 0
 	}
-	return s.repo.ListFleets(ctx, limit, offset)
+	return s.repo.ListFleetsFiltered(ctx, filter, limit, offset)
 }
 
 // ListMembers returns paginated members of a fleet.

@@ -7,6 +7,7 @@ import type {
   FleetReleasesResponse,
   VerificationResponse,
   PaginationParams,
+  ListFleetsParams,
   ListMembersParams,
   VerifyFleetParams,
 } from '../types';
@@ -27,11 +28,13 @@ function fleetPath(owner: string, tag: string, subPath: string = ''): string {
   return `/v1/fleets/${encodedOwner}/${encodedTag}${subPath}`;
 }
 
-export async function listFleets(params?: PaginationParams): Promise<FleetListResponse> {
+export async function listFleets(params?: ListFleetsParams): Promise<FleetListResponse> {
   return apiClient<FleetListResponse>('/v1/fleets', {
     params: {
       limit: params?.limit,
       offset: params?.offset,
+      status: params?.status,
+      tag_prefix: params?.tag_prefix,
     },
   });
 }

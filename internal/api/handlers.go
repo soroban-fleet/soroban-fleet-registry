@@ -31,7 +31,15 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 
 func (s *Server) handleListFleets(w http.ResponseWriter, r *http.Request) {
 	pagination := parsePagination(r)
-	fleets, total, err := s.fleetService.ListFleets(r.Context(), pagination.Limit, pagination.Offset)
+	status := r.URL.Query().Get("status")
+	tagPrefix := r.URL.Query().Get("tag_prefix")
+
+	filter := fleet.FleetFilter{
+		Status:    status,
+		TagPrefix: tagPrefix,
+	}
+
+	fleets, total, err := s.fleetService.ListFleetsFiltered(r.Context(), filter, pagination.Limit, pagination.Offset)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to list fleets")
 		return

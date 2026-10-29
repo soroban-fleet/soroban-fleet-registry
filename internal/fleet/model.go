@@ -18,6 +18,12 @@ var (
 // FleetID uniquely identifies a fleet by owner and tag.
 type FleetID = cap85.FleetID
 
+// FleetFilter provides optional search criteria for listing fleets.
+type FleetFilter struct {
+	Status    string `json:"status,omitempty"`
+	TagPrefix string `json:"tag_prefix,omitempty"`
+}
+
 // Fleet represents an externally managed Soroban contract fleet.
 type Fleet struct {
 	ID                FleetID   `json:"id"`

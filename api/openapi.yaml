@@ -96,6 +96,17 @@ paths:
           schema:
             type: integer
             default: 0
+        - name: status
+          in: query
+          description: Filter fleets by latest verification status (e.g. HEALTHY, DRIFT, BROKEN_REFERENCE, INCOMPLETE)
+          schema:
+            type: string
+            enum: [HEALTHY, DRIFT, BROKEN_REFERENCE, INCOMPLETE, UNKNOWN]
+        - name: tag_prefix
+          in: query
+          description: Filter fleets by tag prefix
+          schema:
+            type: string
       responses:
         '200':
           description: List of fleets

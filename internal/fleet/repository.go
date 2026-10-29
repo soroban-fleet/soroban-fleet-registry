@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -15,6 +16,7 @@ type Repository interface {
 	GetFleet(ctx context.Context, id FleetID) (*Fleet, error)
 	GetFleetTx(ctx context.Context, tx *sql.Tx, id FleetID) (*Fleet, error)
 	ListFleets(ctx context.Context, limit, offset int) ([]Fleet, int64, error)
+	ListFleetsFiltered(ctx context.Context, filter FleetFilter, limit, offset int) ([]Fleet, int64, error)
 	UpsertFleet(ctx context.Context, fleet *Fleet) error
 	UpsertFleetTx(ctx context.Context, tx *sql.Tx, fleet *Fleet) error
 
@@ -120,22 +122,56 @@ func (r *PostgresRepository) GetFleetTx(ctx context.Context, tx *sql.Tx, id Flee
 
 // ListFleets returns a paginated list of fleets and the total count.
 func (r *PostgresRepository) ListFleets(ctx context.Context, limit, offset int) ([]Fleet, int64, error) {
-	var total int64
-	if err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM fleets").Scan(&total); err != nil {
-		return nil, 0, fmt.Errorf("count fleets: %w", err)
+	return r.ListFleetsFiltered(ctx, FleetFilter{}, limit, offset)
+}
+
+// ListFleetsFiltered returns a paginated list of fleets matching the provided filters.
+func (r *PostgresRepository) ListFleetsFiltered(ctx context.Context, filter FleetFilter, limit, offset int) ([]Fleet, int64, error) {
+	var conditions []string
+	var args []any
+	argIdx := 1
+
+	if filter.TagPrefix != "" {
+		conditions = append(conditions, fmt.Sprintf("f.tag LIKE $%d", argIdx))
+		args = append(args, filter.TagPrefix+"%")
+		argIdx++
 	}
 
-	query := `
-		SELECT owner_address, tag, current_wasm_hash, member_count,
-		       first_seen_ledger, last_seen_ledger, last_indexed_ledger,
-		       created_at, updated_at
-		FROM fleets
-		ORDER BY created_at DESC, owner_address ASC, tag ASC
-		LIMIT $1 OFFSET $2
-	`
-	rows, err := r.db.QueryContext(ctx, query, limit, offset)
+	if filter.Status != "" {
+		conditions = append(conditions, fmt.Sprintf(`(
+			SELECT v.status FROM fleet_verifications v
+			WHERE v.owner_address = f.owner_address AND v.tag = f.tag
+			ORDER BY v.verified_at DESC LIMIT 1
+		) = $%d`, argIdx))
+		args = append(args, filter.Status)
+		argIdx++
+	}
+
+	whereClause := ""
+	if len(conditions) > 0 {
+		whereClause = "WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM fleets f %s", whereClause)
+	var total int64
+	if err := r.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count filtered fleets: %w", err)
+	}
+
+	query := fmt.Sprintf(`
+		SELECT f.owner_address, f.tag, f.current_wasm_hash, f.member_count,
+		       f.first_seen_ledger, f.last_seen_ledger, f.last_indexed_ledger,
+		       f.created_at, f.updated_at
+		FROM fleets f
+		%s
+		ORDER BY f.created_at DESC, f.owner_address ASC, f.tag ASC
+		LIMIT $%d OFFSET $%d
+	`, whereClause, argIdx, argIdx+1)
+
+	queryArgs := append(args, limit, offset)
+	rows, err := r.db.QueryContext(ctx, query, queryArgs...)
 	if err != nil {
-		return nil, 0, fmt.Errorf("list fleets: %w", err)
+		return nil, 0, fmt.Errorf("list filtered fleets: %w", err)
 	}
 	defer rows.Close()
 

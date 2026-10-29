@@ -17,6 +17,11 @@ export interface PaginationParams {
   offset?: number;
 }
 
+export interface ListFleetsParams extends PaginationParams {
+  status?: string;
+  tag_prefix?: string;
+}
+
 export interface ListMembersParams extends PaginationParams {
   active_only?: boolean;
 }
