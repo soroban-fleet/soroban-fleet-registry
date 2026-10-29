@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/csv"
 	"encoding/hex"
 	"encoding/json"
 	"flag"
@@ -83,6 +84,7 @@ Commands:
   fleet members --owner C... --tag TAG     List fleet members
   fleet history --owner C... --tag TAG     List verification history
   fleet releases --owner C... --tag TAG    List release history
+  fleet export --owner C... --tag TAG      Export fleet membership (CSV/JSON)
   fleet verify --owner C... --tag TAG --expected-wasm HASH  Verify fleet integrity
   contract inspect --contract C...         Inspect contract and resolved executable
   migrate [up|down]                        Run database schema migrations
@@ -90,7 +92,8 @@ Commands:
   ingest                                   Run historical ingestion pipeline
 
 Global Flags:
-  --json                                   Machine-readable JSON output`)
+  --json                                   Machine-readable JSON output
+  --format [text|json|csv|sarif]           Output format override`)
 }
 
 func getDB(cfg *config.Config) (*sql.DB, error) {
@@ -109,7 +112,7 @@ func getDB(cfg *config.Config) (*sql.DB, error) {
 
 func runFleetCommand(args []string, cfg *config.Config, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "Subcommand required: list, inspect, members, history, releases, verify")
+		fmt.Fprintln(stderr, "Subcommand required: list, inspect, members, history, releases, export, verify")
 		return ExitInvalidInput
 	}
 
@@ -121,6 +124,7 @@ func runFleetCommand(args []string, cfg *config.Config, stdout, stderr io.Writer
 	tag := fs.String("tag", "", "Fleet tag")
 	expectedWASM := fs.String("expected-wasm", "", "Expected WASM hash (hex)")
 	jsonOutput := fs.Bool("json", false, "Output format JSON")
+	format := fs.String("format", "", "Output format (text, json, csv, sarif)")
 	limit := fs.Int("limit", 20, "Page limit")
 	offset := fs.Int("offset", 0, "Page offset")
 	activeOnly := fs.Bool("active-only", true, "Active members only")
@@ -256,6 +260,50 @@ func runFleetCommand(args []string, cfg *config.Config, stdout, stderr io.Writer
 		}
 		return ExitSuccess
 
+	case "export":
+		if *owner == "" || *tag == "" {
+			fmt.Fprintln(stderr, "Missing required flags: --owner and --tag")
+			return ExitInvalidInput
+		}
+		exportFormat := *format
+		if exportFormat == "" {
+			if *jsonOutput {
+				exportFormat = "json"
+			} else {
+				exportFormat = "csv"
+			}
+		}
+
+		members, total, err := fleetService.ListMembers(ctx, fleet.FleetID{Owner: *owner, Tag: *tag}, *activeOnly, 10000, 0)
+		if err != nil {
+			fmt.Fprintf(stderr, "Error exporting fleet members: %v\n", err)
+			return ExitInvalidInput
+		}
+
+		if exportFormat == "csv" {
+			w := csv.NewWriter(stdout)
+			_ = w.Write([]string{"contract_id", "owner_address", "tag", "wasm_hash", "active", "first_seen_ledger", "last_seen_ledger"})
+			for _, m := range members {
+				_ = w.Write([]string{
+					m.ContractID,
+					m.FleetID.Owner,
+					m.FleetID.Tag,
+					hex.EncodeToString(m.WASMHash),
+					fmt.Sprintf("%t", m.Active),
+					fmt.Sprintf("%d", m.FirstSeenLedger),
+					fmt.Sprintf("%d", m.LastSeenLedger),
+				})
+			}
+			w.Flush()
+		} else {
+			_ = json.NewEncoder(stdout).Encode(map[string]any{
+				"fleet": fmt.Sprintf("%s:%s", *owner, *tag),
+				"total": total,
+				"data":  members,
+			})
+		}
+		return ExitSuccess
+
 	case "verify":
 		if *owner == "" || *tag == "" {
 			fmt.Fprintln(stderr, "Missing required flags: --owner and --tag")
@@ -284,7 +332,9 @@ func runFleetCommand(args []string, cfg *config.Config, stdout, stderr io.Writer
 			return ExitInternalError
 		}
 
-		if *jsonOutput {
+		if *format == "sarif" {
+			emitSARIF(stdout, res)
+		} else if *jsonOutput || *format == "json" {
 			_ = json.NewEncoder(stdout).Encode(res)
 		} else {
 			fmt.Fprintf(stdout, "Verification Result: %s\n", res.Status)
@@ -503,4 +553,138 @@ func runIngestCommand(cfg *config.Config, stdout, stderr io.Writer) int {
 	}
 
 	return ExitSuccess
+}
+
+func emitSARIF(w io.Writer, res verification.VerificationResult) {
+	type SarifMessage struct {
+		Text string `json:"text"`
+	}
+	type SarifLogicalLocation struct {
+		Name               string `json:"name"`
+		FullyQualifiedName string `json:"fullyQualifiedName"`
+		Kind               string `json:"kind"`
+	}
+	type SarifLocation struct {
+		LogicalLocations []SarifLogicalLocation `json:"logicalLocations"`
+	}
+	type SarifResult struct {
+		RuleID    string          `json:"ruleId"`
+		Level     string          `json:"level"`
+		Message   SarifMessage    `json:"message"`
+		Locations []SarifLocation `json:"locations,omitempty"`
+	}
+	type SarifRule struct {
+		ID                   string       `json:"id"`
+		Name                 string       `json:"name"`
+		ShortDescription     SarifMessage `json:"shortDescription"`
+		DefaultConfiguration struct {
+			Level string `json:"level"`
+		} `json:"defaultConfiguration"`
+	}
+	type SarifDriver struct {
+		Name           string      `json:"name"`
+		Version        string      `json:"version"`
+		InformationURI string      `json:"informationUri"`
+		Rules          []SarifRule `json:"rules"`
+	}
+	type SarifTool struct {
+		Driver SarifDriver `json:"driver"`
+	}
+	type SarifRun struct {
+		Tool    SarifTool     `json:"tool"`
+		Results []SarifResult `json:"results"`
+	}
+	type SarifReport struct {
+		Schema  string     `json:"$schema"`
+		Version string     `json:"version"`
+		Runs    []SarifRun `json:"runs"`
+	}
+
+	driver := SarifDriver{
+		Name:           "soroban-fleet-registry",
+		Version:        "1.0.0",
+		InformationURI: "https://soroban-fleet.github.io/soroban-fleet-registry/",
+		Rules: []SarifRule{
+			{
+				ID:               "SFR001",
+				Name:             "FleetExecutableDrift",
+				ShortDescription: SarifMessage{Text: "Contract member executable hash does not match canonical fleet executable"},
+				DefaultConfiguration: struct {
+					Level string `json:"level"`
+				}{Level: "error"},
+			},
+			{
+				ID:               "SFR002",
+				Name:             "FleetBrokenReference",
+				ShortDescription: SarifMessage{Text: "Contract executable external reference cannot be resolved on-chain"},
+				DefaultConfiguration: struct {
+					Level string `json:"level"`
+				}{Level: "error"},
+			},
+			{
+				ID:               "SFR003",
+				Name:             "FleetIncompleteCoverage",
+				ShortDescription: SarifMessage{Text: "Indexer has not indexed through the latest network ledger sequence"},
+				DefaultConfiguration: struct {
+					Level string `json:"level"`
+				}{Level: "warning"},
+			},
+		},
+	}
+
+	var results []SarifResult
+	fleetName := fmt.Sprintf("%s:%s", res.FleetID.Owner, res.FleetID.Tag)
+
+	loc := SarifLocation{
+		LogicalLocations: []SarifLogicalLocation{
+			{
+				Name:               fleetName,
+				FullyQualifiedName: fmt.Sprintf("stellar://contract/%s/fleet/%s", res.FleetID.Owner, res.FleetID.Tag),
+				Kind:               "namespace",
+			},
+		},
+	}
+
+	switch res.Status {
+	case verification.StatusDrift:
+		results = append(results, SarifResult{
+			RuleID: "SFR001",
+			Level:  "error",
+			Message: SarifMessage{
+				Text: fmt.Sprintf("Fleet %s has %d member(s) drifted from expected WASM %x", fleetName, res.MismatchingMembers, res.ExpectedWASMHash),
+			},
+			Locations: []SarifLocation{loc},
+		})
+	case verification.StatusBrokenReference:
+		results = append(results, SarifResult{
+			RuleID: "SFR002",
+			Level:  "error",
+			Message: SarifMessage{
+				Text: fmt.Sprintf("Fleet %s has %d member(s) with broken on-chain external references", fleetName, res.MissingMembers),
+			},
+			Locations: []SarifLocation{loc},
+		})
+	case verification.StatusIncomplete:
+		results = append(results, SarifResult{
+			RuleID: "SFR003",
+			Level:  "warning",
+			Message: SarifMessage{
+				Text: fmt.Sprintf("Fleet %s verification is incomplete (indexed through ledger %d)", fleetName, res.IndexedThrough),
+			},
+			Locations: []SarifLocation{loc},
+		})
+	}
+
+	report := SarifReport{
+		Schema:  "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+		Version: "2.1.0",
+		Runs: []SarifRun{
+			{
+				Tool:    SarifTool{Driver: driver},
+				Results: results,
+			},
+		},
+	}
+
+	_ = json.NewEncoder(w).Encode(report)
 }

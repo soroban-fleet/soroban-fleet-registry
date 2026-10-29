@@ -11,6 +11,7 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/soroban-fleet/soroban-fleet-registry/internal/fleet"
+	"github.com/soroban-fleet/soroban-fleet-registry/internal/verification"
 	"github.com/soroban-fleet/soroban-fleet-registry/migrations"
 	"github.com/stellar/go-stellar-sdk/strkey"
 )
@@ -143,5 +144,51 @@ func TestCLI_ExitCodesAndCommands(t *testing.T) {
 	// Because no checkpoint is indexed yet, the status is INCOMPLETE -> ExitIncomplete (3)
 	if code != ExitIncomplete {
 		t.Errorf("expected exit code %d for incomplete indexing, got %d", ExitIncomplete, code)
+	}
+}
+
+func TestCLI_UsageAndExportHelp(t *testing.T) {
+	var out, errOut bytes.Buffer
+	code := run([]string{"--help"}, &out, &errOut)
+	if code != ExitSuccess {
+		t.Fatalf("expected ExitSuccess, got %d", code)
+	}
+
+	helpText := out.String()
+	if !bytes.Contains(out.Bytes(), []byte("fleet export")) {
+		t.Errorf("expected help text to mention 'fleet export', got:\n%s", helpText)
+	}
+	if !bytes.Contains(out.Bytes(), []byte("--format [text|json|csv|sarif]")) {
+		t.Errorf("expected help text to mention --format flag, got:\n%s", helpText)
+	}
+}
+
+func TestCLI_EmitSARIF(t *testing.T) {
+	ownerID := makeContractID(92)
+	tag := "vault-v2"
+	fID := fleet.FleetID{Owner: ownerID, Tag: tag}
+
+	res := verification.VerificationResult{
+		FleetID:            fID,
+		ExpectedWASMHash:   []byte{0x01, 0x02, 0x03},
+		TotalMembers:       10,
+		MatchingMembers:    8,
+		MismatchingMembers: 2,
+		Status:             verification.StatusDrift,
+		IndexedThrough:     500,
+	}
+
+	var buf bytes.Buffer
+	emitSARIF(&buf, res)
+
+	sarifOutput := buf.String()
+	if !bytes.Contains(buf.Bytes(), []byte("https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json")) {
+		t.Errorf("expected SARIF schema header, got:\n%s", sarifOutput)
+	}
+	if !bytes.Contains(buf.Bytes(), []byte("SFR001")) {
+		t.Errorf("expected rule SFR001 in SARIF report, got:\n%s", sarifOutput)
+	}
+	if !bytes.Contains(buf.Bytes(), []byte("FleetExecutableDrift")) {
+		t.Errorf("expected FleetExecutableDrift rule name, got:\n%s", sarifOutput)
 	}
 }
