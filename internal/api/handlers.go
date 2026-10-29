@@ -236,3 +236,72 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 	})
 }
+
+// IndexerStatusResponse represents the synchronization state and health of the ingestion pipeline.
+type IndexerStatusResponse struct {
+	Stream              string `json:"stream"`
+	CheckpointLedger    uint32 `json:"checkpoint_ledger"`
+	NetworkLatestLedger uint32 `json:"network_latest_ledger"`
+	LedgerGap           uint32 `json:"ledger_gap"`
+	IsCaughtUp          bool   `json:"is_caught_up"`
+	Status              string `json:"status"`
+	Timestamp           string `json:"timestamp"`
+}
+
+func (s *Server) handleIndexerStatus(w http.ResponseWriter, r *http.Request) {
+	stream := r.URL.Query().Get("stream")
+	if stream == "" {
+		stream = "main"
+	}
+
+	var checkpoint uint32
+	if s.checkpoints != nil {
+		cp, err := s.checkpoints.GetCheckpoint(r.Context(), stream)
+		if err != nil {
+			s.logger.Warn("failed to fetch checkpoint", "stream", stream, "err", err)
+		} else {
+			checkpoint = cp
+		}
+	}
+
+	var networkLatest uint32
+	if s.rpcClient != nil {
+		latest, err := s.rpcClient.GetLatestLedger(r.Context())
+		if err != nil {
+			s.logger.Warn("failed to fetch latest ledger from rpc", "err", err)
+		} else {
+			networkLatest = latest.Sequence
+		}
+	}
+
+	var ledgerGap uint32
+	if networkLatest > checkpoint {
+		ledgerGap = networkLatest - checkpoint
+	}
+
+	isCaughtUp := false
+	status := "UNKNOWN"
+
+	if checkpoint > 0 && networkLatest > 0 {
+		if ledgerGap <= 5 {
+			isCaughtUp = true
+			status = "HEALTHY"
+		} else {
+			status = "LAGGING"
+		}
+	} else if checkpoint > 0 && networkLatest == 0 {
+		status = "SYNCING"
+	}
+
+	writeJSON(w, http.StatusOK, SingleResponse{
+		Data: IndexerStatusResponse{
+			Stream:              stream,
+			CheckpointLedger:    checkpoint,
+			NetworkLatestLedger: networkLatest,
+			LedgerGap:           ledgerGap,
+			IsCaughtUp:          isCaughtUp,
+			Status:              status,
+			Timestamp:           time.Now().UTC().Format(time.RFC3339),
+		},
+	})
+}

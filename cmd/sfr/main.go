@@ -434,6 +434,7 @@ func runAPICommand(cfg *config.Config, stdout, stderr io.Writer) int {
 
 	logger := slog.New(slog.NewTextHandler(stdout, nil))
 	server := api.NewServer(cfg.HTTPAddr, fleetService, verifier, releaseRepo, logger)
+	server.SetIndexerComponents(checkpoints, rpcClient)
 	if len(cfg.AllowedOrigins) > 0 {
 		server.SetAllowedOrigins(cfg.AllowedOrigins)
 	}

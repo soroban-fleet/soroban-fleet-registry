@@ -9,6 +9,8 @@ import (
 
 	"github.com/soroban-fleet/soroban-fleet-registry/internal/fleet"
 	"github.com/soroban-fleet/soroban-fleet-registry/internal/history"
+	"github.com/soroban-fleet/soroban-fleet-registry/internal/ingest"
+	"github.com/soroban-fleet/soroban-fleet-registry/internal/rpc"
 	"github.com/soroban-fleet/soroban-fleet-registry/internal/verification"
 )
 
@@ -18,6 +20,8 @@ type Server struct {
 	fleetService   *fleet.Service
 	verifier       verification.Verifier
 	releases       history.Repository
+	checkpoints    ingest.CheckpointStore
+	rpcClient      rpc.Client
 	logger         *slog.Logger
 	server         *http.Server
 	allowedOrigins []string
@@ -48,6 +52,12 @@ func (s *Server) SetAllowedOrigins(origins []string) {
 	s.allowedOrigins = origins
 }
 
+// SetIndexerComponents configures optional checkpoint store and RPC client for indexer health reporting.
+func (s *Server) SetIndexerComponents(checkpoints ingest.CheckpointStore, rpcClient rpc.Client) {
+	s.checkpoints = checkpoints
+	s.rpcClient = rpcClient
+}
+
 // Handler configures and returns the HTTP request multiplexer.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
@@ -55,6 +65,10 @@ func (s *Server) Handler() http.Handler {
 	// Service health endpoint
 	mux.HandleFunc("GET /health", s.handleHealth)
 	mux.HandleFunc("GET /v1/health", s.handleHealth)
+
+	// Indexer status endpoints
+	mux.HandleFunc("GET /status", s.handleIndexerStatus)
+	mux.HandleFunc("GET /v1/indexer/status", s.handleIndexerStatus)
 
 	mux.HandleFunc("GET /v1/fleets", s.handleListFleets)
 	mux.HandleFunc("GET /v1/fleets/{owner}/{tag}", s.handleGetFleet)

@@ -56,6 +56,28 @@ paths:
                     type: string
                     format: date-time
 
+  /v1/indexer/status:
+    get:
+      summary: Indexer stream health and ledger lag
+      description: Returns the current ingestion checkpoint, network latest ledger, sync lag, and health classification.
+      parameters:
+        - name: stream
+          in: query
+          description: Ingestion stream identifier (default "main")
+          schema:
+            type: string
+            default: main
+      responses:
+        '200':
+          description: Indexer synchronization status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/IndexerStatus'
+
   /v1/fleets:
     get:
       summary: List all fleets
@@ -549,3 +571,38 @@ components:
             wasm_hash:
               type: string
               format: byte
+
+    IndexerStatus:
+      type: object
+      required:
+        - stream
+        - checkpoint_ledger
+        - network_latest_ledger
+        - ledger_gap
+        - is_caught_up
+        - status
+        - timestamp
+      properties:
+        stream:
+          type: string
+          example: main
+        checkpoint_ledger:
+          type: integer
+          example: 1050
+        network_latest_ledger:
+          type: integer
+          example: 1055
+        ledger_gap:
+          type: integer
+          example: 5
+        is_caught_up:
+          type: boolean
+          example: true
+        status:
+          type: string
+          enum: [HEALTHY, LAGGING, SYNCING, UNKNOWN]
+          example: HEALTHY
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-29T15:00:00Z'

@@ -14,9 +14,12 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/soroban-fleet/soroban-fleet-registry/internal/fleet"
 	"github.com/soroban-fleet/soroban-fleet-registry/internal/history"
+	"github.com/soroban-fleet/soroban-fleet-registry/internal/rpc"
 	"github.com/soroban-fleet/soroban-fleet-registry/internal/verification"
 	"github.com/soroban-fleet/soroban-fleet-registry/migrations"
+	protocol "github.com/stellar/go-stellar-sdk/protocols/rpc"
 	"github.com/stellar/go-stellar-sdk/strkey"
+	"github.com/stellar/go-stellar-sdk/xdr"
 )
 
 func getTestDB(t *testing.T) *sql.DB {
@@ -223,5 +226,93 @@ func TestCORS_Configuration(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 	if rec.Header().Get("Access-Control-Allow-Origin") != "" {
 		t.Errorf("expected no allow origin header for untrusted origin, got %s", rec.Header().Get("Access-Control-Allow-Origin"))
+	}
+}
+
+type mockCheckpointStore struct {
+	ledger uint32
+	err    error
+}
+
+func (m *mockCheckpointStore) GetCheckpoint(ctx context.Context, stream string) (uint32, error) {
+	return m.ledger, m.err
+}
+
+func (m *mockCheckpointStore) SetCheckpointTx(ctx context.Context, tx *sql.Tx, stream string, ledger uint32) error {
+	m.ledger = ledger
+	return nil
+}
+
+type mockRPCClient struct {
+	latestSequence uint32
+	err            error
+}
+
+func (m *mockRPCClient) GetLatestLedger(ctx context.Context) (rpc.LatestLedger, error) {
+	if m.err != nil {
+		return rpc.LatestLedger{}, m.err
+	}
+	return rpc.LatestLedger{Sequence: m.latestSequence}, nil
+}
+
+func (m *mockRPCClient) GetLedgerEntries(ctx context.Context, keys []xdr.LedgerKey) (rpc.LedgerEntriesResponse, error) {
+	return rpc.LedgerEntriesResponse{}, nil
+}
+
+func (m *mockRPCClient) GetLedgers(ctx context.Context, startLedger uint32, limit uint32) (protocol.GetLedgersResponse, error) {
+	return protocol.GetLedgersResponse{}, nil
+}
+
+func TestAPI_IndexerStatus(t *testing.T) {
+	// 1. Without components (default fallback)
+	s := NewServer(":8080", nil, nil, nil, nil)
+	handler := s.Handler()
+
+	req := httptest.NewRequest("GET", "/v1/indexer/status", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+
+	var resp struct {
+		Data IndexerStatusResponse `json:"data"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp.Data.Stream != "main" || resp.Data.Status != "UNKNOWN" {
+		t.Errorf("unexpected fallback status: %+v", resp.Data)
+	}
+
+	// 2. Caught up / Healthy
+	s.SetIndexerComponents(&mockCheckpointStore{ledger: 1000}, &mockRPCClient{latestSequence: 1002})
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if !resp.Data.IsCaughtUp || resp.Data.Status != "HEALTHY" || resp.Data.LedgerGap != 2 {
+		t.Errorf("expected caught up healthy status, got: %+v", resp.Data)
+	}
+
+	// 3. Lagging
+	s.SetIndexerComponents(&mockCheckpointStore{ledger: 1000}, &mockRPCClient{latestSequence: 1050})
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp.Data.IsCaughtUp || resp.Data.Status != "LAGGING" || resp.Data.LedgerGap != 50 {
+		t.Errorf("expected lagging status, got: %+v", resp.Data)
 	}
 }
