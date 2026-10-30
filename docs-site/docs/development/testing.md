@@ -30,7 +30,7 @@ shared PostgreSQL instance.
 | `internal/ingest` | change extraction, ledger processing, checkpoints, idempotent replay |
 | `internal/fleet` | repository, membership lifecycle, service queries |
 | `internal/verification` | classification rules for all five statuses |
-| `internal/api` | handlers, pagination, errors, CORS, health |
+| `internal/api` | handlers, pagination, errors, CORS, health, rate limiting |
 | `internal/config` | environment parsing and validation |
 | `internal/rpc` | RPC client behavior |
 | `migrations` | up/down migration cycle |

@@ -65,6 +65,15 @@ Format for each entry: **Symptom → Cause → How to inspect → Safe fix.**
 | **Inspect** | `curl -si -H "Origin: https://fleet.example.com" http://localhost:8080/health \| grep -i access-control` |
 | **Safe fix** | Add the exact origin, comma-separated, restart the API. Preflight `OPTIONS` returns `204` when allowed |
 
+## Requests rejected with 429 (RATE_LIMITED)
+
+| | |
+|---|---|
+| **Symptom** | `429` with `Retry-After`, error code `RATE_LIMITED`; the frontend shows fleets loading then failing |
+| **Cause** | A client exceeded its token bucket. Behind a proxy without `SFR_TRUST_PROXY`, every browser shares the proxy's single bucket and empties it |
+| **Inspect** | `curl -si http://localhost:8080/v1/indexer/status \| head -1`; check whether requests arrive from one proxy address; read the `rate limits configured` line in API startup logs |
+| **Safe fix** | Raise `SFR_RATE_LIMIT_RPS` / `SFR_RATE_LIMIT_BURST` for legitimate traffic, or set `SFR_TRUST_PROXY=true` behind a trusted proxy. Keep `SFR_RATE_LIMIT_HEAVY_RPS` low — it protects the upstream RPC quota |
+
 ## Migration failure
 
 | | |

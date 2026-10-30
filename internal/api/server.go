@@ -25,6 +25,8 @@ type Server struct {
 	logger         *slog.Logger
 	server         *http.Server
 	allowedOrigins []string
+	rateLimit      RateLimitConfig
+	nowFunc        func() time.Time
 }
 
 // NewServer initializes a new API server.
@@ -44,12 +46,19 @@ func NewServer(
 		verifier:     verifier,
 		releases:     releases,
 		logger:       logger,
+		nowFunc:      time.Now,
 	}
 }
 
 // SetAllowedOrigins configures explicit CORS origins.
 func (s *Server) SetAllowedOrigins(origins []string) {
 	s.allowedOrigins = origins
+}
+
+// SetRateLimit configures per-client request budgets. Categories with a rate
+// of zero or less are unlimited.
+func (s *Server) SetRateLimit(cfg RateLimitConfig) {
+	s.rateLimit = cfg
 }
 
 // SetIndexerComponents configures optional checkpoint store and RPC client for indexer health reporting.
@@ -62,21 +71,23 @@ func (s *Server) SetIndexerComponents(checkpoints ingest.CheckpointStore, rpcCli
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 
-	// Service health endpoint
+	limiters := newRouteLimiters(s.rateLimit, s.nowFunc)
+
+	// RPC-free probes stay unthrottled so orchestrators cannot be locked out.
 	mux.HandleFunc("GET /health", s.handleHealth)
 	mux.HandleFunc("GET /v1/health", s.handleHealth)
 
-	// Indexer status endpoints
-	mux.HandleFunc("GET /status", s.handleIndexerStatus)
-	mux.HandleFunc("GET /v1/indexer/status", s.handleIndexerStatus)
+	// Indexer status endpoints read live RPC state.
+	mux.HandleFunc("GET /status", limiters.protect(true, s.handleIndexerStatus))
+	mux.HandleFunc("GET /v1/indexer/status", limiters.protect(true, s.handleIndexerStatus))
 
-	mux.HandleFunc("GET /v1/fleets", s.handleListFleets)
-	mux.HandleFunc("GET /v1/fleets/{owner}/{tag}", s.handleGetFleet)
-	mux.HandleFunc("GET /v1/fleets/{owner}/{tag}/members", s.handleListMembers)
-	mux.HandleFunc("GET /v1/fleets/{owner}/{tag}/history", s.handleFleetHistory)
-	mux.HandleFunc("GET /v1/fleets/{owner}/{tag}/releases", s.handleFleetReleases)
-	mux.HandleFunc("GET /v1/fleets/{owner}/{tag}/verify", s.handleVerifyFleet)
-	mux.HandleFunc("GET /v1/contracts/{contract_id}", s.handleInspectContract)
+	mux.HandleFunc("GET /v1/fleets", limiters.protect(false, s.handleListFleets))
+	mux.HandleFunc("GET /v1/fleets/{owner}/{tag}", limiters.protect(false, s.handleGetFleet))
+	mux.HandleFunc("GET /v1/fleets/{owner}/{tag}/members", limiters.protect(false, s.handleListMembers))
+	mux.HandleFunc("GET /v1/fleets/{owner}/{tag}/history", limiters.protect(false, s.handleFleetHistory))
+	mux.HandleFunc("GET /v1/fleets/{owner}/{tag}/releases", limiters.protect(false, s.handleFleetReleases))
+	mux.HandleFunc("GET /v1/fleets/{owner}/{tag}/verify", limiters.protect(true, s.handleVerifyFleet))
+	mux.HandleFunc("GET /v1/contracts/{contract_id}", limiters.protect(true, s.handleInspectContract))
 
 	// Wrap with common middleware (panic recovery, CORS, logging)
 	return s.recoveryMiddleware(s.corsMiddleware(s.loggingMiddleware(mux)))

@@ -485,6 +485,20 @@ func runAPICommand(cfg *config.Config, stdout, stderr io.Writer) int {
 	logger := slog.New(slog.NewTextHandler(stdout, nil))
 	server := api.NewServer(cfg.HTTPAddr, fleetService, verifier, releaseRepo, logger)
 	server.SetIndexerComponents(checkpoints, rpcClient)
+	server.SetRateLimit(api.RateLimitConfig{
+		RequestsPerSecond:      cfg.RateLimitRPS,
+		Burst:                  float64(cfg.RateLimitBurst),
+		HeavyRequestsPerSecond: cfg.HeavyRateLimitRPS,
+		HeavyBurst:             float64(cfg.HeavyRateLimitBurst),
+		TrustProxy:             cfg.TrustProxy,
+	})
+	logger.Info("rate limits configured",
+		"read_rps", cfg.RateLimitRPS,
+		"read_burst", cfg.RateLimitBurst,
+		"rpc_intensive_rps", cfg.HeavyRateLimitRPS,
+		"rpc_intensive_burst", cfg.HeavyRateLimitBurst,
+		"trust_proxy", cfg.TrustProxy,
+	)
 	if len(cfg.AllowedOrigins) > 0 {
 		server.SetAllowedOrigins(cfg.AllowedOrigins)
 	}

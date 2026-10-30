@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Per-Client API Rate Limiting**: Token buckets keyed by client address throttle every data endpoint
+  before it reaches the database or Stellar RPC. Read endpoints use `SFR_RATE_LIMIT_RPS` /
+  `SFR_RATE_LIMIT_BURST` (default 20/60); RPC-intensive endpoints (`.../verify`, contract lookup,
+  indexer status) use the stricter `SFR_RATE_LIMIT_HEAVY_RPS` / `SFR_RATE_LIMIT_HEAVY_BURST`
+  (default 1/5). Over-budget callers receive `429` with `Retry-After` and a `RATE_LIMITED` error
+  body; `/health` stays unlimited. `SFR_TRUST_PROXY` switches bucket keys to `X-Forwarded-For` for
+  proxied deployments.
+
+### Security
+- Fleet verification and live ledger resolution can no longer be amplified into unbounded
+  upstream RPC traffic or unbounded `fleet_verifications` writes by a single client.
+
+---
+
 ## [1.0.0] - 2026-10-07
 
 ### Added

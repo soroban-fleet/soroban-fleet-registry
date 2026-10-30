@@ -65,6 +65,11 @@ Configuration is managed via explicit environment variables. Production deployme
 | `SFR_INDEXER_START_LEDGER` | `1000` (or empty to resume) | Network start ledger sequence | Network CAP-85 activation sequence | Indexer |
 | `SFR_INDEXER_BATCH_SIZE` | `50` | `50` - `100` | `50` - `200` (depending on RPC limits) | Indexer |
 | `SFR_CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | `https://fleet-testnet.example.com` | `https://fleet.example.com` | Backend API |
+| `SFR_RATE_LIMIT_RPS` | `20` (`0` to disable) | `20` | `20` - `50`, sized for real user concurrency | Backend API |
+| `SFR_RATE_LIMIT_BURST` | `60` | `60` | `60` - `150` | Backend API |
+| `SFR_RATE_LIMIT_HEAVY_RPS` | `1` (`0` to disable) | `1` | `0.5` - `2` (protects the upstream RPC quota) | Backend API |
+| `SFR_RATE_LIMIT_HEAVY_BURST` | `5` | `5` | `3` - `10` | Backend API |
+| `SFR_TRUST_PROXY` | `false` | `true` behind a proxy that sets `X-Forwarded-For` | `true` behind a trusted proxy only | Backend API |
 | `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8080` | `https://api.fleet-testnet.example.com` | `https://api.fleet.example.com` | Frontend Web UI |
 | `NEXT_PUBLIC_NETWORK` | `testnet` | `testnet` | `mainnet` | Frontend Web UI |
 | `NEXT_PUBLIC_EXPLORER_BASE_URL`| `https://stellar.expert/explorer/testnet` | `https://stellar.expert/explorer/testnet` | `https://stellar.expert/explorer/public` | Frontend Web UI |
@@ -123,6 +128,8 @@ docker run -d \
   -e SFR_DATABASE_URL=postgres://user:pass@db-host:5432/sfr?sslmode=require \
   -e SFR_HTTP_ADDR=:8080 \
   -e SFR_CORS_ALLOWED_ORIGINS=https://fleet.example.com \
+  -e SFR_RATE_LIMIT_RPS=20 \
+  -e SFR_RATE_LIMIT_HEAVY_RPS=1 \
   -p 8080:8080 \
   soroban-fleet-registry:latest api
 ```
@@ -232,5 +239,13 @@ The system explicitly distinguishes **service liveness** from **indexer synchron
 2. **CORS Policy**:
    - Configured via `SFR_CORS_ALLOWED_ORIGINS`.
    - In production, specify exact origins (e.g. `SFR_CORS_ALLOWED_ORIGINS=https://fleet.example.com`). Wildcards (`*`) must not be used in secure environments.
-3. **Transport Encryption**:
+3. **Per-Client Rate Limiting**:
+   - Every authenticated-free read endpoint is limited per client token bucket (`SFR_RATE_LIMIT_RPS` / `SFR_RATE_LIMIT_BURST`).
+   - Endpoints that resolve live ledger state (`/v1/fleets/{owner}/{tag}/verify`, `/v1/contracts/{contract_id}`, `/status`, `/v1/indexer/status`) have a stricter bucket (`SFR_RATE_LIMIT_HEAVY_RPS` / `SFR_RATE_LIMIT_HEAVY_BURST`), because each request fans out to the upstream Soroban RPC and may persist a verification row.
+   - Over-budget requests are rejected before any database or RPC work with `429`, a `RATE_LIMITED` error body, and a `Retry-After` header.
+   - `/health` and `/v1/health` are exempt so orchestrator probes and load balancers cannot be locked out.
+   - Buckets are keyed by the peer address. Enable `SFR_TRUST_PROXY=true` only when the API is reachable exclusively through a proxy that rewrites `X-Forwarded-For`; otherwise clients can forge that header to obtain a fresh bucket.
+   - To disable limiting entirely for a trusted internal network, set the corresponding rate to `0`.
+4. **Transport Encryption**:
    - Production ingress must terminate TLS 1.3/1.2 at reverse proxies or cloud load balancers. Plain HTTP traffic must be permanently redirected to HTTPS.
+   - When a reverse proxy fronts the API, set `SFR_TRUST_PROXY=true` so rate limit buckets track real client addresses instead of the proxy address.

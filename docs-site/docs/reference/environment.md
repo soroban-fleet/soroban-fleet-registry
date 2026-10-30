@@ -20,6 +20,11 @@ Read by the `sfr` binary (API, indexer, CLI, migrations) at process start. Appli
 | `SFR_INDEXER_START_LEDGER` | Ledger to start from when no checkpoint row exists | No — default `0` | Server | `1000` |
 | `SFR_INDEXER_BATCH_SIZE` | Ledgers requested per `getLedgers` call; must be > 0 | No — default `50` | Server | `50` |
 | `SFR_CORS_ALLOWED_ORIGINS` | Comma-separated browser origins allowed by CORS. Unset = any origin accepted (development only) | No | Server | `http://localhost:3000` |
+| `SFR_RATE_LIMIT_RPS` | Per-client requests per second for read endpoints; `0` disables the limit | No — default `20` | Server | `20` |
+| `SFR_RATE_LIMIT_BURST` | Token bucket capacity for read endpoints; must be >= 1 when the rate is enabled | No — default `60` | Server | `60` |
+| `SFR_RATE_LIMIT_HEAVY_RPS` | Per-client requests per second for RPC-intensive endpoints (`verify`, contract inspect, indexer status); `0` disables | No — default `1` | Server | `1` |
+| `SFR_RATE_LIMIT_HEAVY_BURST` | Token bucket capacity for RPC-intensive endpoints | No — default `5` | Server | `5` |
+| `SFR_TRUST_PROXY` | Key rate limit buckets by the first `X-Forwarded-For` hop. Enable only behind a trusted reverse proxy | No — default `false` | Server | `true` |
 | `SFR_METRICS_ADDR` | Loaded into configuration; no consumer in v1.0.0 | No | Server | `:9090` |
 | `SFR_READ_ONLY` | Parsed as a boolean into configuration; no enforcement in v1.0.0 | No | Server | `true` |
 
@@ -32,6 +37,9 @@ SFR_RPC_URL is required for indexer
 SFR_DATABASE_URL is not configured
 invalid SFR_INDEXER_START_LEDGER "x": ...
 SFR_INDEXER_BATCH_SIZE must be greater than 0
+invalid SFR_RATE_LIMIT_RPS "fast": ...
+SFR_RATE_LIMIT_BURST must be at least 1 when SFR_RATE_LIMIT_RPS is enabled
+invalid SFR_TRUST_PROXY "yes": ...
 ```
 
 `sfr api` and `sfr ingest` exit with code `4` on configuration validation errors.

@@ -214,6 +214,13 @@ The `web/` directory contains the read-only web interface built with Next.js 14,
 | `SFR_INDEXER_START_LEDGER` | Starting ledger sequence for indexer | `0` |
 | `SFR_INDEXER_BATCH_SIZE` | RPC ledger batch size | `50` |
 | `SFR_CORS_ALLOWED_ORIGINS` | Allowed CORS origins (comma-separated) | `""` |
+| `SFR_RATE_LIMIT_RPS` | Per-client requests/second for read endpoints (`0` disables) | `20` |
+| `SFR_RATE_LIMIT_BURST` | Initial burst capacity for read endpoints | `60` |
+| `SFR_RATE_LIMIT_HEAVY_RPS` | Per-client requests/second for RPC-intensive endpoints (`0` disables) | `1` |
+| `SFR_RATE_LIMIT_HEAVY_BURST` | Initial burst capacity for RPC-intensive endpoints | `5` |
+| `SFR_TRUST_PROXY` | Key limits by `X-Forwarded-For`; enable only behind a trusted proxy | `false` |
+
+Rate limits are per-client token buckets. Over-budget clients receive `429` with a `Retry-After` header and a `RATE_LIMITED` error body; `/health` stays unlimited so orchestrator probes are never locked out.
 
 See [`.env.example`](.env.example) and [`web/.env.example`](web/.env.example).
 

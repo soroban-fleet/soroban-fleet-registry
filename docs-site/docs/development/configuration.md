@@ -40,6 +40,11 @@ cp web/.env.example web/.env.local
 | `SFR_INDEXER_START_LEDGER` | First ledger when no checkpoint exists | No (default `0`) | `1000` |
 | `SFR_INDEXER_BATCH_SIZE` | Ledgers per `getLedgers` call; must be > 0 | No (default `50`) | `50` |
 | `SFR_CORS_ALLOWED_ORIGINS` | Comma-separated allowed browser origins | No (unset = allow any origin) | `http://localhost:3000` |
+| `SFR_RATE_LIMIT_RPS` | Per-client requests per second for read endpoints; `0` disables | No (default `20`) | `20` |
+| `SFR_RATE_LIMIT_BURST` | Bucket capacity for read endpoints; >= 1 when the rate is enabled | No (default `60`) | `60` |
+| `SFR_RATE_LIMIT_HEAVY_RPS` | Per-client requests per second for RPC-intensive endpoints; `0` disables | No (default `1`) | `1` |
+| `SFR_RATE_LIMIT_HEAVY_BURST` | Bucket capacity for RPC-intensive endpoints | No (default `5`) | `5` |
+| `SFR_TRUST_PROXY` | Use the first `X-Forwarded-For` hop as the rate limit key; enable only behind a trusted proxy | No (default `false`) | `true` |
 | `SFR_METRICS_ADDR` | Read into configuration; not consumed by any v1.0.0 code path | No | `:9090` |
 | `SFR_READ_ONLY` | Parsed as boolean into configuration; not enforced by any v1.0.0 code path | No | `true` |
 
@@ -49,6 +54,8 @@ Invalid numeric values fail fast:
 invalid SFR_INDEXER_START_LEDGER "abc": ...
 SFR_INDEXER_BATCH_SIZE must be greater than 0
 invalid SFR_READ_ONLY "yes": ...
+invalid SFR_RATE_LIMIT_RPS "fast": ...
+SFR_RATE_LIMIT_BURST must be at least 1 when SFR_RATE_LIMIT_RPS is enabled
 ```
 
 ## Frontend variables

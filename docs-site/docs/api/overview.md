@@ -76,9 +76,43 @@ Single-resource response envelope:
 |---|---:|---|
 | `INVALID_ARGUMENT` | 400 | Bad address, invalid tag, malformed `expected_wasm` hex |
 | `FLEET_NOT_FOUND` | 404 | Fleet does not exist in the index |
+| `RATE_LIMITED` | 429 | Client exceeded its request budget; the response carries a `Retry-After` header |
 | `INTERNAL_ERROR` | 500 | Database failure, unexpected handler error |
 
 Database messages are generic; connection strings and stack traces are never returned.
+
+## Rate limiting
+
+Each client address gets a token bucket. Limits are enforced before any database or RPC work, so a
+throttled request costs the service nothing.
+
+| Bucket | Endpoints | Default |
+|---|---|---|
+| Read | `GET /v1/fleets`, fleet detail, members, history, releases | `20` rps, burst `60` |
+| RPC-intensive | `.../verify`, `GET /v1/contracts/{id}`, `GET /status`, `GET /v1/indexer/status` | `1` rps, burst `5` |
+| Unlimited | `GET /health`, `GET /v1/health` | never throttled |
+
+The RPC-intensive bucket is deliberately tight: those handlers fan out to the upstream Soroban RPC
+and persist verification rows, so a single client could otherwise exhaust an RPC quota or grow the
+verification table on its own.
+
+```bash
+# Adjust budgets; 0 disables a bucket.
+SFR_RATE_LIMIT_RPS=50
+SFR_RATE_LIMIT_BURST=150
+SFR_RATE_LIMIT_HEAVY_RPS=2
+SFR_RATE_LIMIT_HEAVY_BURST=10
+
+# Enable only when every request arrives through a trusted proxy that sets X-Forwarded-For.
+SFR_TRUST_PROXY=true
+```
+
+Over-budget requests answer `429` with `Retry-After` in seconds:
+
+```bash
+curl -si http://localhost:8080/v1/indexer/status | head -1
+# HTTP/1.1 429 Too Many Requests
+```
 
 ## CORS
 
